@@ -1,21 +1,20 @@
 # CubEcto
 
-**TODO: Add description**
+## Scope
+
+Create an Ecto adapter for the [CubDB](https://hex.pm/packages/cubdb) library.
+
+* Leverage Ecto.Repo for basic CRUD calls.
+* Leverage Ecto.Query for composing more complex calls.
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `cub_ecto` to your list of dependencies in `mix.exs`:
+Installation through github:
 
 ```elixir
 def deps do
   [
-    {:cub_ecto, "~> 0.1.0"}
+    {:cub_ecto, git: "git@github.com:chouzar/cubecto.git", branch: "main"}
   ]
 end
 ```
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/cub_ecto](https://hexdocs.pm/cub_ecto).
-

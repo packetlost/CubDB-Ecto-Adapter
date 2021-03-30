@@ -42,25 +42,20 @@ defmodule CubEcto do
 
   @impl true
   @spec autogenerate(:id | :binary_id | :embed_id) :: term() | nil
+  def autogenerate(:id), do: :erlang.unique_integer([:positive])
   def autogenerate(_any), do: Ecto.UUID.generate()
 
   @impl true
   @spec insert(Schema.adapter_meta(), Schema.schema_meta(), Schema.fields(), Schema.on_conflict(), Schema.returning(), Schema.options()) :: {:ok, Schema.fields()} | {:invalid, Schema.constraints()}
-  def insert(%{pid: pid}, schema_meta, fields, on_conflict, returning, opts) do
+  def insert(%{pid: pid}, schema_meta, fields, _on_conflict, _returning, _opts) do
     # Handle fetch for Ecto {:error, stale callback}
-
-    IO.inspect(schema_meta)
-    IO.inspect(fields)
-    IO.inspect(on_conflict)
-    IO.inspect(returning)
-    IO.inspect(opts)
-
     id = Keyword.fetch!(fields, :id)
     if CubDB.has_key?(pid, id) do
       {:invalid, primary_key: "Already exists"}
     else
+      fields = merge_schema(fields, schema_meta)
       :ok = CubDB.put(pid, id, fields)
-      {:ok, fields}
+      {:ok, []}
     end
   end
 
@@ -82,12 +77,15 @@ defmodule CubEcto do
 
   @impl true
   @spec update(Schema.adapter_meta(), Schema.schema_meta(), Schema.fields(), Schema.filters(), Schema.returning(), Schema.options()) :: {:ok, Schema.fields()} | {:invalid, Schema.constraints()} | {:error, :stale}
-  def update(%{pid: pid}, _schema, fields, _filters, _returning, _options) do
+  def update(%{pid: pid}, schema_meta, fields, _filters, _returning, _options) do
     # Handle fetch for Ecto {:error, stale callback}
     id = Keyword.fetch!(fields, :id)
+    IO.inspect(fields)
+    IO.inspect(schema_meta)
     if CubDB.has_key?(pid, id) do
+      fields = merge_schema(fields, schema_meta)
       :ok = CubDB.put(pid, id, fields)
-      {:ok, fields}
+      {:ok, []}
     else
       {:invalid, primary_key: "Primary key doesn't exists"}
     end
@@ -98,12 +96,15 @@ defmodule CubEcto do
   def delete(%{pid: pid}, _wat, filters, _options) do
     case Keyword.fetch(filters, :id) do
       {:ok, id} ->
-        record = CubDB.get(pid, id)
         :ok = CubDB.delete(pid, id)
-        {:ok, Enum.to_list(record)}
+        {:ok, []}
 
       :error ->
         {:error, :stale}
     end
+  end
+
+  defp merge_schema(fields, schema) do
+    Keyword.merge(fields, [schema_meta: schema])
   end
 end

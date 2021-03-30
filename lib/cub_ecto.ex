@@ -47,13 +47,13 @@ defmodule CubEcto do
 
   @impl true
   @spec insert(Schema.adapter_meta(), Schema.schema_meta(), Schema.fields(), Schema.on_conflict(), Schema.returning(), Schema.options()) :: {:ok, Schema.fields()} | {:invalid, Schema.constraints()}
-  def insert(%{pid: pid}, schema_meta, fields, _on_conflict, _returning, _opts) do
+  def insert(%{pid: pid}, _schema_meta, fields, _on_conflict, _returning, _opts) do
     # Handle fetch for Ecto {:error, stale callback}
     id = Keyword.fetch!(fields, :id)
     if CubDB.has_key?(pid, id) do
       {:invalid, primary_key: "Already exists"}
     else
-      fields = merge_schema(fields, schema_meta)
+      #fields = merge_schema(fields, schema_meta)
       :ok = CubDB.put(pid, id, fields)
       {:ok, []}
     end
@@ -83,7 +83,7 @@ defmodule CubEcto do
     IO.inspect(fields)
     IO.inspect(schema_meta)
     if CubDB.has_key?(pid, id) do
-      fields = merge_schema(fields, schema_meta)
+      #fields = merge_schema(fields, schema_meta)
       :ok = CubDB.put(pid, id, fields)
       {:ok, []}
     else
@@ -104,7 +104,55 @@ defmodule CubEcto do
     end
   end
 
-  defp merge_schema(fields, schema) do
-    Keyword.merge(fields, [schema_meta: schema])
+  #defp merge_schema(fields, schema) do
+  #  Keyword.merge(fields, [schema_meta: schema])
+  #end
+
+  @behaviour Ecto.Adapter.Queryable
+
+  alias Ecto.Adapter.Queryable
+
+  @impl true
+  @spec execute(Queryable.adapter_meta(), Queryable.query_meta(), Queryable.query_cache(), list(), Queryable.options()) :: {integer(), [[Queryable.selected()]] | nil}
+  def execute(%{pid: pid}, _query_meta, {:nocache, query_cache}, params, _opts) do
+    #IO.inspect(pid)
+    IO.inspect(params)
+    #IO.inspect(query_meta)
+
+    %{
+      #from: %{source: {_, type}},
+      limit: %{expr: limit, fields: _limit_fields},
+      #select: %{expr: select, fields: select_fields},
+      #wheres: %{expr: where, fields: where_fields}
+    } = query_cache
+
+    #query_cache
+    #|> Map.from_struct()
+    #|> Enum.each fn vals -> IO.puts inspect(vals) end
+
+    {:ok, list} = CubDB.select(pid,
+      pipe: [
+        #map: fn {_key, value} -> value end,
+        #filter: fn n -> is_number(n) and n > 0 end # only positive numbers
+        take: limit, # take only the first 10 entries in the range
+      ]
+    )
+
+    IO.inspect(list)
+
+    {Enum.count(list), list}
   end
+
+  @impl true
+  @spec prepare(any, any) :: {:nocache, any}
+  def prepare(_, query) do
+    {:nocache, query}
+  end
+
+  @impl true
+  @spec stream(any, any, any, any, any) :: none
+  def stream(_, _, _, _, _) do
+    raise "Not implemented"
+  end
+
 end
